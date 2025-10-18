@@ -74,7 +74,7 @@ def registrar_entrada():
     cur.close()
     conn.close()
 
-    return jsonify({"mensaje": "Entrada registrada correctamente"})
+    return jsonify({"mensaje": "Entrada registrada correctamente"}), 201
 
 
 # --- REGISTRAR SALIDA DE VEHÍCULO ---
@@ -128,7 +128,34 @@ def registrar_salida():
     return jsonify({
         "mensaje": "Salida registrada correctamente",
         "total": valor_total
-    })
+    }), 200
+
+
+# --- OBTENER CUPOS ---
+@app.route("/cupos", methods=["GET"])
+def obtener_cupos():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Obtener cupos totales
+    cur.execute("SELECT cupos_totales FROM configuracion WHERE id = 1")
+    config = cur.fetchone()
+    cupos_totales = config[0] if config else 200
+    
+    # Contar vehículos adentro (sin salida pagada)
+    cur.execute("SELECT COUNT(*) FROM registros_vehiculos WHERE pagado = false")
+    ocupados = cur.fetchone()[0]
+    
+    cur.close()
+    conn.close()
+    
+    disponibles = cupos_totales - ocupados
+    
+    return jsonify({
+        "totales": cupos_totales,
+        "ocupados": ocupados,
+        "disponibles": disponibles
+    }), 200
 
 
 # --- OBTENER VEHÍCULOS ACTIVOS (opcional para el panel) ---
@@ -156,7 +183,7 @@ def vehiculos_activos():
             "entrada": r[3].strftime("%Y-%m-%d %H:%M:%S")
         })
 
-    return jsonify(resultado)
+    return jsonify(resultado), 200
 
 
 # --- MAIN ---
